@@ -1,10 +1,11 @@
 cmake_minimum_required(VERSION 2.8.3)
 project(detected_objects_visualizer)
 
+add_definitions('-std=c++11')
+
 find_package(catkin REQUIRED COMPONENTS
-        autoware_build_flags
         roscpp
-        autoware_msgs
+        cti_msgs
         geometry_msgs
         sensor_msgs
         tf
@@ -16,7 +17,6 @@ find_package(catkin REQUIRED COMPONENTS
 catkin_package(
         CATKIN_DEPENDS
         roscpp
-        autoware_msgs
         geometry_msgs
         sensor_msgs
         tf
@@ -57,6 +57,7 @@ target_link_libraries(visualize_detected_objects
         ${OpenCV_LIBRARIES}
         ${EIGEN3_LIBRARIES}
         ${catkin_LIBRARIES}
+        glog
         )
 
 add_dependencies(visualize_detected_objects

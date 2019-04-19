@@ -34,7 +34,9 @@ VisualizeDetectedObjects::VisualizeDetectedObjects() : arrow_height_(0.5), label
 
   std::string object_src_topic;
   private_nh_.param<std::string>("objects_src_topic", object_src_topic, "/objects");
-  object_src_topic = ros_namespace_ + object_src_topic;
+
+  // assuming namespace not using '/' as suffix
+  object_src_topic = ros_namespace_ + "/" + object_src_topic;
 
   ROS_INFO("[%s] objects_src_topic: %s", __APP_NAME__, object_src_topic.c_str());
 
@@ -132,7 +134,7 @@ std_msgs::ColorRGBA VisualizeDetectedObjects::ParseColor(const std::vector<doubl
   return color;
 }
 
-void VisualizeDetectedObjects::DetectedObjectsCallback(const autoware_msgs::DetectedObjectArray &in_objects)
+void VisualizeDetectedObjects::DetectedObjectsCallback(const cti_msgs::DetectedObjectArray &in_objects)
 {
   visualization_msgs::MarkerArray label_markers, arrow_markers, centroid_markers, polygon_hulls, bounding_boxes,
                                   object_models;
@@ -143,30 +145,30 @@ void VisualizeDetectedObjects::DetectedObjectsCallback(const autoware_msgs::Dete
 
   label_markers = ObjectsToLabels(in_objects);
   arrow_markers = ObjectsToArrows(in_objects);
-  polygon_hulls = ObjectsToHulls(in_objects);
+//  polygon_hulls = ObjectsToHulls(in_objects);
   bounding_boxes = ObjectsToBoxes(in_objects);
   object_models = ObjectsToModels(in_objects);
-  centroid_markers = ObjectsToCentroids(in_objects);
+//  centroid_markers = ObjectsToCentroids(in_objects);
 
   visualization_markers.markers.insert(visualization_markers.markers.end(),
                                        label_markers.markers.begin(), label_markers.markers.end());
   visualization_markers.markers.insert(visualization_markers.markers.end(),
                                        arrow_markers.markers.begin(), arrow_markers.markers.end());
-  visualization_markers.markers.insert(visualization_markers.markers.end(),
-                                       polygon_hulls.markers.begin(), polygon_hulls.markers.end());
+//  visualization_markers.markers.insert(visualization_markers.markers.end(),
+//                                       polygon_hulls.markers.begin(), polygon_hulls.markers.end());
   visualization_markers.markers.insert(visualization_markers.markers.end(),
                                        bounding_boxes.markers.begin(), bounding_boxes.markers.end());
   visualization_markers.markers.insert(visualization_markers.markers.end(),
                                        object_models.markers.begin(), object_models.markers.end());
-  visualization_markers.markers.insert(visualization_markers.markers.end(),
-                                       centroid_markers.markers.begin(), centroid_markers.markers.end());
+//  visualization_markers.markers.insert(visualization_markers.markers.end(),
+//                                       centroid_markers.markers.begin(), centroid_markers.markers.end());
 
   publisher_markers_.publish(visualization_markers);
 
 }
 
 visualization_msgs::MarkerArray
-VisualizeDetectedObjects::ObjectsToCentroids(const autoware_msgs::DetectedObjectArray &in_objects)
+VisualizeDetectedObjects::ObjectsToCentroids(const cti_msgs::DetectedObjectArray &in_objects)
 {
   visualization_msgs::MarkerArray centroid_markers;
   for (auto const &object: in_objects.objects)
@@ -202,10 +204,11 @@ VisualizeDetectedObjects::ObjectsToCentroids(const autoware_msgs::DetectedObject
 }//ObjectsToCentroids
 
 visualization_msgs::MarkerArray
-VisualizeDetectedObjects::ObjectsToBoxes(const autoware_msgs::DetectedObjectArray &in_objects)
+VisualizeDetectedObjects::ObjectsToBoxes(const cti_msgs::DetectedObjectArray &in_objects)
 {
   visualization_msgs::MarkerArray object_boxes;
 
+  // we need to convert this to a bounding box
   for (auto const &object: in_objects.objects)
   {
     if (IsObjectValid(object) &&
@@ -242,7 +245,7 @@ VisualizeDetectedObjects::ObjectsToBoxes(const autoware_msgs::DetectedObjectArra
 }//ObjectsToBoxes
 
 visualization_msgs::MarkerArray
-VisualizeDetectedObjects::ObjectsToModels(const autoware_msgs::DetectedObjectArray &in_objects)
+VisualizeDetectedObjects::ObjectsToModels(const cti_msgs::DetectedObjectArray &in_objects)
 {
   visualization_msgs::MarkerArray object_models;
 
@@ -302,7 +305,7 @@ VisualizeDetectedObjects::ObjectsToModels(const autoware_msgs::DetectedObjectArr
 }//ObjectsToModels
 
 visualization_msgs::MarkerArray
-VisualizeDetectedObjects::ObjectsToHulls(const autoware_msgs::DetectedObjectArray &in_objects)
+VisualizeDetectedObjects::ObjectsToHulls(const cti_msgs::DetectedObjectArray &in_objects)
 {
   visualization_msgs::MarkerArray polygon_hulls;
 
@@ -344,7 +347,7 @@ VisualizeDetectedObjects::ObjectsToHulls(const autoware_msgs::DetectedObjectArra
 }
 
 visualization_msgs::MarkerArray
-VisualizeDetectedObjects::ObjectsToArrows(const autoware_msgs::DetectedObjectArray &in_objects)
+VisualizeDetectedObjects::ObjectsToArrows(const cti_msgs::DetectedObjectArray &in_objects)
 {
   visualization_msgs::MarkerArray arrow_markers;
   for (auto const &object: in_objects.objects)
@@ -422,7 +425,7 @@ VisualizeDetectedObjects::ObjectsToArrows(const autoware_msgs::DetectedObjectArr
 }//ObjectsToArrows
 
 visualization_msgs::MarkerArray
-VisualizeDetectedObjects::ObjectsToLabels(const autoware_msgs::DetectedObjectArray &in_objects)
+VisualizeDetectedObjects::ObjectsToLabels(const cti_msgs::DetectedObjectArray &in_objects)
 {
   visualization_msgs::MarkerArray label_markers;
   for (auto const &object: in_objects.objects)
@@ -492,21 +495,12 @@ VisualizeDetectedObjects::ObjectsToLabels(const autoware_msgs::DetectedObjectArr
   return label_markers;
 }//ObjectsToLabels
 
-bool VisualizeDetectedObjects::IsObjectValid(const autoware_msgs::DetectedObject &in_object)
+bool VisualizeDetectedObjects::IsObjectValid(const cti_msgs::DetectedObject &in_object)
 {
-  if (!in_object.valid ||
-      std::isnan(in_object.pose.orientation.x) ||
-      std::isnan(in_object.pose.orientation.y) ||
-      std::isnan(in_object.pose.orientation.z) ||
-      std::isnan(in_object.pose.orientation.w) ||
-      std::isnan(in_object.pose.position.x) ||
-      std::isnan(in_object.pose.position.y) ||
-      std::isnan(in_object.pose.position.z) ||
-      (in_object.pose.position.x == 0.) ||
-      (in_object.pose.position.y == 0.) ||
-      (in_object.dimensions.x <= 0.) ||
-      (in_object.dimensions.y <= 0.) ||
-      (in_object.dimensions.z <= 0.)
+  if (
+      (in_object.dimensions.x < 0.) ||
+      (in_object.dimensions.y < 0.) ||
+      (in_object.dimensions.z < 0.)
     )
   {
     return false;
