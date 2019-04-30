@@ -1,0 +1,8 @@
+<launch>
+
+    <node pkg="detected_objects_visualizer" type="visualize_detected_objects" name="cluster_detect_visualization_01" output="screen" ns="/dummy">
+        <param name="objects_src_topic" value="/dummy/detected_obstacles" />
+        <param name="objects_markers_topic" value="/dummy/detected_obstacles_markders" />
+        <param name="color_alpha" value="0.6" />
+    </node>
+</launch>
